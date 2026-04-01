@@ -5,7 +5,7 @@ Sistema de Diagnóstico Temprano de Alzheimer — Backend (Node.js + TypeScript)
 
 > Universidad Santiago de Cali · Facultad de Ingeniería · Semestre 2026A  
 > Supervisor: Jair Enrique Sanclemente Castro  
-> Equipo: Nahia Montoya · Miguel Arcila · Óscar Barón · Jeison Pastas
+> Equipo: Nahia Montoya · Miguel Arcila · Óscar Barón
 
 ---
 
