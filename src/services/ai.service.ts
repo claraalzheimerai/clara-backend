@@ -1,57 +1,76 @@
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import FormData from 'form-data';
 import fs from 'fs';
-import { ENV } from '../config/env.config';
-import { AIServiceResponse } from '../types/analysis.types';
 import { logger } from '../utils/logger';
+import { ENV } from '../config/env.config';
 
-export class AIService {
-  private readonly baseUrl: string;
-  private readonly timeout: number;
+export interface PredictionResult {
+  filename: string;
+  prediction: {
+    label: 'CN' | 'MCI' | 'AD';
+    confidence: number;
+    probabilities: {
+      CN: number;
+      MCI: number;
+      AD: number;
+    };
+  };
+  gradcam: string;
+  model_version: string;
+}
+
+export interface HealthResult {
+  status: string;
+  service: string;
+  version: string;
+  env: string;
+  device: string;
+}
+
+class AIService {
+  private client: AxiosInstance;
 
   constructor() {
-    this.baseUrl = ENV.AI_SERVICE.URL;
-    this.timeout = ENV.AI_SERVICE.TIMEOUT_MS;
-  }
-
-  async analyzeImage(filePath: string, filename: string): Promise<AIServiceResponse> {
-    logger.info(`Enviando imagen al AI Service: ${filename}`);
-
-    const form = new FormData();
-    form.append('file', fs.createReadStream(filePath), {
-      filename,
-      contentType: 'application/octet-stream',
+    this.client = axios.create({
+      baseURL: ENV.AI_SERVICE.URL,
+      timeout: ENV.AI_SERVICE.TIMEOUT_MS,
     });
 
+    logger.info(`AI Service URL: ${this.client.defaults.baseURL}`);
+  }
+
+  async health(): Promise<HealthResult> {
     try {
-      const response = await axios.post<AIServiceResponse>(
-        `${this.baseUrl}/api/v1/analyze`,
-        form,
-        {
-          headers: { ...form.getHeaders() },
-          timeout: this.timeout,
-        },
-      );
-
-      logger.info(
-        `Análisis completado en ${response.data.processingTimeMs}ms — ` +
-        `Resultado: ${response.data.classification.label} ` +
-        `(${(response.data.classification.confidence * 100).toFixed(1)}%)`
-      );
-
+      const response = await this.client.get<HealthResult>('/health');
       return response.data;
     } catch (error) {
-      logger.error('Error al comunicarse con el AI Service:', error);
-      throw new Error('El servicio de IA no está disponible. Intente nuevamente.');
+      logger.error('AI Service health check failed:', error);
+      throw new Error('AI Service no disponible');
     }
   }
 
-  async healthCheck(): Promise<boolean> {
+  async predict(filePath: string, filename: string): Promise<PredictionResult> {
     try {
-      const response = await axios.get(`${this.baseUrl}/health`, { timeout: 5000 });
-      return response.status === 200;
-    } catch {
-      return false;
+      const form = new FormData();
+      form.append('file', fs.createReadStream(filePath), {
+        filename,
+        contentType: 'application/octet-stream',
+      });
+
+      logger.info(`Enviando imagen al AI Service: ${filename}`);
+
+      const response = await this.client.post<PredictionResult>(
+        '/predict/',
+        form,
+        { headers: form.getHeaders() }
+      );
+
+      logger.info(`Predicción recibida: ${response.data.prediction.label}`);
+      return response.data;
+
+    } catch (error) {
+      logger.error('Error en predicción AI Service:', error);
+      throw new Error('Error procesando imagen en AI Service');
     }
   }
 }
