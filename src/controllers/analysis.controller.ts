@@ -1,9 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
+import { v4 as uuidv4 } from 'uuid';
 import { aiService } from '../services/ai.service';
 import { deleteTempFile } from '../utils/file.utils';
 import { logger } from '../utils/logger';
 import { AnalysisResult } from '../models/analysis.model';
 import { successResponse } from '../models/api.model';
+import {
+  SOCKET_EVENTS,
+  emitToAnalysis,
+  emitToAll,
+} from '../socket';
 
 export const healthCheck = async (
   req: Request,
@@ -13,14 +19,14 @@ export const healthCheck = async (
   try {
     const aiHealth = await aiService.health();
     res.json({
-      status: 'ok',
-      backend: 'clara-backend',
+      status:     'ok',
+      backend:    'clara-backend',
       ai_service: aiHealth,
     });
   } catch (error) {
     res.status(503).json({
-      status: 'degraded',
-      backend: 'clara-backend',
+      status:     'degraded',
+      backend:    'clara-backend',
       ai_service: 'no disponible',
     });
   }
@@ -31,7 +37,9 @@ export const uploadAndAnalyze = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const file = req.file;
+  const file       = req.file;
+  const analysisId = uuidv4();
+  const io         = req.app.get('io');
 
   if (!file) {
     res.status(400).json({ error: 'No se recibió ningún archivo' });
@@ -39,14 +47,47 @@ export const uploadAndAnalyze = async (
   }
 
   try {
-    logger.info(`Análisis iniciado: ${file.originalname}`);
+    logger.info(`Análisis iniciado: ${file.originalname} | id: ${analysisId}`);
+
+    // Evento: análisis iniciado
+    if (io) {
+      emitToAll(io, SOCKET_EVENTS.ANALYSIS_STARTED, {
+        analysisId,
+        filename:  file.originalname,
+        startedAt: new Date().toISOString(),
+      });
+    }
+
+    // Evento: preprocesando
+    if (io) {
+      emitToAll(io, SOCKET_EVENTS.ANALYSIS_PROGRESS, {
+        analysisId,
+        stage:   'preprocessing',
+        message: 'Preprocesando imagen MRI...',
+        percent: 25,
+      });
+    }
+
+    // Evento: inferencia
+    if (io) {
+      emitToAll(io, SOCKET_EVENTS.ANALYSIS_PROGRESS, {
+        analysisId,
+        stage:   'inference',
+        message: 'Clasificando con ResNet50...',
+        percent: 60,
+      });
+    }
 
     const result = await aiService.predict(file.path, file.originalname);
 
-    // Emitir resultado por Socket.IO si está disponible
-    const io = req.app.get('io');
+    // Evento: grad-cam
     if (io) {
-      io.emit('analysis:complete', result);
+      emitToAll(io, SOCKET_EVENTS.ANALYSIS_PROGRESS, {
+        analysisId,
+        stage:   'gradcam',
+        message: 'Generando mapa de activación Grad-CAM...',
+        percent: 90,
+      });
     }
 
     const enriched: AnalysisResult = {
@@ -54,14 +95,30 @@ export const uploadAndAnalyze = async (
       analyzed_at: new Date().toISOString(),
     };
 
+    // Evento: análisis completo
+    if (io) {
+      emitToAll(io, SOCKET_EVENTS.ANALYSIS_COMPLETE, {
+        analysisId,
+        ...enriched,
+      });
+    }
+
     res.json(successResponse(enriched, {
       response_time: Date.now(),
     }));
 
   } catch (error) {
+    // Evento: error
+    if (io) {
+      emitToAll(io, SOCKET_EVENTS.ANALYSIS_ERROR, {
+        analysisId,
+        error: error instanceof Error ? error.message : 'Error desconocido',
+        code:  'ANALYSIS_FAILED',
+      });
+    }
     next(error);
+
   } finally {
-    // Eliminar archivo temporal siempre
     if (file?.path) {
       deleteTempFile(file.path);
     }
