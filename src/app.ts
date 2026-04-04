@@ -2,12 +2,15 @@ import 'express-async-errors';
 import express from 'express';
 import { corsMiddleware } from './middlewares/cors.middleware';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
+import { securityHeaders, generalLimiter } from './middlewares/security.middleware';
 import routes from './routes/index';
 import { ENV } from './config/env.config';
 import { logger } from './utils/logger';
 
 const app = express();
 
+app.use(securityHeaders);
+app.use(generalLimiter);
 app.use(corsMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
