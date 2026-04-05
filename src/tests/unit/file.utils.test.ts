@@ -3,7 +3,7 @@ import path from 'path';
 import { deleteTempFile, isValidFile } from '../../utils/file.utils';
 
 describe('file.utils', () => {
-  const testDir  = path.join(__dirname, 'tmp');
+  const testDir = path.join(__dirname, 'tmp');
   const testFile = path.join(testDir, 'test.txt');
 
   beforeAll(() => {
@@ -33,8 +33,16 @@ describe('file.utils', () => {
       expect(fs.existsSync(testFile)).toBe(false);
     });
 
-    it('no lanza error si el archivo no existe', () => {
-      expect(() => deleteTempFile('/no/existe.txt')).not.toThrow();
+    it('loguea error si unlinkSync falla', () => {
+      // El archivo existe pero falla al eliminarse
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest.spyOn(fs, 'unlinkSync').mockImplementation(() => {
+        throw new Error('Permission denied');
+      });
+
+      expect(() => deleteTempFile('/protected/file.txt')).not.toThrow();
+
+      jest.restoreAllMocks();
     });
   });
 });

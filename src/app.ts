@@ -1,5 +1,7 @@
 import 'express-async-errors';
 import express from 'express';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger.config';
 import { corsMiddleware } from './middlewares/cors.middleware';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
 import { securityHeaders, generalLimiter } from './middlewares/security.middleware';
@@ -24,6 +26,17 @@ app.get('/', (_req, res) => {
     description: 'Clinical Learning Assistant for Radiology Analysis – USC 2026',
     docs: `/api/${ENV.API_VERSION}/analysis/health`,
   });
+});
+
+// Documentación Swagger
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: 'CLARA API Docs',
+  customCss: '.swagger-ui .topbar { background-color: #1e40af; }',
+}));
+
+// Exponer spec en JSON
+app.get('/api-docs.json', (_req, res) => {
+  res.json(swaggerSpec);
 });
 
 app.use(notFoundHandler);
