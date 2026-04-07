@@ -76,3 +76,4 @@ class AIService {
 }
 
 export const aiService = new AIService();
+export { AIService };
