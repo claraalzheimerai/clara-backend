@@ -1,4 +1,9 @@
 # CLARA Backend API
+![Tests](https://img.shields.io/badge/tests-59%20passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
+![Node](https://img.shields.io/badge/node-20%20LTS-green)
+![TypeScript](https://img.shields.io/badge/typescript-6.0-blue)
+![License](https://img.shields.io/badge/license-academic-orange)
 
 **Clinical Learning Assistant for Radiology Analysis**  
 Sistema de Diagnóstico Temprano de Alzheimer — Backend (Node.js + TypeScript)
