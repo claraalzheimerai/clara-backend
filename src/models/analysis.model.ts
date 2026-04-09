@@ -66,3 +66,38 @@ export function getConfidenceLevel(confidence: number): ConfidenceLevel {
   if (confidence >= CONFIDENCE_THRESHOLDS.MEDIUM) return 'MEDIUM';
   return 'LOW';
 }
+
+// Etiquetas de nivel de confianza
+export const CONFIDENCE_LABELS: Record<ConfidenceLevel, string> = {
+  HIGH:   'Alta confianza',
+  MEDIUM: 'Confianza media',
+  LOW:    'Baja confianza — requiere revisión médica',
+};
+
+export interface EnrichedAnalysisResult extends AnalysisResult {
+  analysisId:      string;
+  fileSize:        number;
+  confidenceLevel: ConfidenceLevel;
+  confidenceLabel: string;
+  diagnosticLabel: string;
+  diagnosticColor: string;
+  requiresReview:  boolean;
+}
+
+export function buildEnrichedResult(params: {
+  analysisId: string;
+  fileSize:   number;
+  result:     AnalysisResult;
+}): EnrichedAnalysisResult {
+  const level = getConfidenceLevel(params.result.prediction.confidence);
+  return {
+    ...params.result,
+    analysisId:      params.analysisId,
+    fileSize:        params.fileSize,
+    confidenceLevel: level,
+    confidenceLabel: CONFIDENCE_LABELS[level],
+    diagnosticLabel: DIAGNOSTIC_LABELS[params.result.prediction.label],
+    diagnosticColor: DIAGNOSTIC_COLORS[params.result.prediction.label],
+    requiresReview:  level === 'LOW',
+  };
+}
