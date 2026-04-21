@@ -18,7 +18,7 @@ Sistema de Diagnóstico Temprano de Alzheimer — Backend (Node.js + TypeScript)
 ```
 ┌─────────────────┐     HTTP/REST      ┌──────────────────────┐
 │  clara-frontend │ ◄────────────────► │   clara-backend      │
-│  HTML/CSS/JS    │                    │   Node.js/TypeScript  │
+│  HTML/CSS/JS    │                    │   Node.js/TypeScript │
 └─────────────────┘                    └──────────┬───────────┘
                                                   │ HTTP interno
                                                   ▼
@@ -46,21 +46,24 @@ Sistema de Diagnóstico Temprano de Alzheimer — Backend (Node.js + TypeScript)
 ```
 clara-backend/
 ├── src/
-│   ├── config/          # Variables de entorno y configuración Multer
-│   ├── controllers/     # Lógica de endpoints
-│   ├── middlewares/     # CORS, errores, validación
-│   ├── routes/          # Definición de rutas
-│   ├── services/        # Cliente HTTP al microservicio IA
-│   ├── types/           # Tipos TypeScript compartidos
-│   ├── utils/           # Logger y manejo de archivos
-│   ├── app.ts           # Configuración Express
-│   ├── server.ts        # Punto de entrada
-│   └── socket.ts        # Configuración Socket.IO
-├── tests/
-│   ├── unit/            # Pruebas unitarias
-│   └── integration/     # Pruebas de integración
-├── uploads/temp/        # Archivos temporales (auto-eliminados)
-├── .env.example         # Plantilla de variables de entorno
+│   ├── config/            # Variables de entorno y configuración Multer
+│   ├── controllers/       # Lógica de endpoints
+│   ├── middlewares/       # CORS, errores, validación
+│   ├── models/            # Definición de modelos de datos y esquemas de la base de datos
+│   ├── routes/            # Definición de rutas
+│   ├── scripts/           # Scripts auxiliares (migraciones, seeds, automatizaciones, etc)
+│   ├── services/          # Cliente HTTP al microservicio IA
+│   ├── test/
+│       ├── unit/          # Pruebas unitarias
+│       └── integration/   # Pruebas de integración
+│   ├── types/             # Tipos TypeScript compartidos
+│   ├── utils/             # Logger y manejo de archivos
+│   ├── app.ts             # Configuración Express
+│   ├── server.ts          # Punto de entrada
+│   └── socket.ts          # Configuración Socket.IO
+│
+├── uploads/temp/          # Archivos temporales (auto-eliminados)
+├── .env.example           # Plantilla de variables de entorno
 └── tsconfig.json
 ```
 
